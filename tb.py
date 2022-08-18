@@ -1,9 +1,9 @@
 from requests import Session
 from requests_pkcs12 import Pkcs12Adapter
 from bs4 import BeautifulSoup
+from getpass import getpass
 import re
 import time
-from getpass import getpass
 import subprocess
 
 class bcolors:
@@ -38,7 +38,7 @@ patterns = [
 url_main = "https://helpdesk.bystrobank.ru"
 url_list = "https://helpdesk.bystrobank.ru/otrs/index.pl?Action=AgentTicketQueue"
 url_block = 'https://helpdesk.bystrobank.ru/otrs/index.pl?Action=AgentTicketLock&Subaction=Lock&TicketID='
-overlook = []
+overlook = set()
 
 cert_pass = getpass(f'{bcolors.WARNING}Пароль от резервной копии сертификата: {bcolors.END}')
 session = Session()
@@ -64,17 +64,14 @@ try:
                         break
                 else:
                     if ticket_id not in overlook:
-                        print(f'{bcolors.WARNING}Новый тикет, открытие в браузере{bcolors.END}')
                         appcommand = ['firefox-bin', url_main + html_ticket.a['href']]
                         subprocess.run(appcommand, capture_output=True)
-                        overlook.append(ticket_id)
-                        if len(overlook) > 15:
-                            overlook.clear()
-                            overlook.append(ticket_id)
+                        print(f'{bcolors.WARNING}Новый тикет, открытие в браузере{bcolors.END}')
+                        overlook.add(ticket_id)
 
         end_time = time.time()
         elapsed_time = end_time - start_time
-        print(f'{bcolors.RED}Затраченное время, сек: {bcolors.OK}{round(elapsed_time, 4)}{bcolors.END}')
+        print(f'{bcolors.RED}Затраченное время, сек: {bcolors.OK}{elapsed_time}{bcolors.END}')
         time.sleep(1)
 
 except KeyboardInterrupt:
