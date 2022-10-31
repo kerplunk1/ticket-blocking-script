@@ -38,9 +38,11 @@ patterns = [
 url_main = "https://helpdesk.bystrobank.ru"
 url_list = "https://helpdesk.bystrobank.ru/otrs/index.pl?Action=AgentTicketQueue"
 url_block = 'https://helpdesk.bystrobank.ru/otrs/index.pl?Action=AgentTicketLock&Subaction=Lock&TicketID='
+url_open = 'https://helpdesk.bystrobank.ru/otrs/index.pl?Action=AgentTicketZoom&TicketID='
 overlook = set()
 
 cert_pass = getpass(f'{bcolors.WARNING}Пароль от резервной копии сертификата: {bcolors.END}')
+ldap_pass = getpass(f'{bcolors.WARNING}LDAP пароль: {bcolors.END}')
 session = Session()
 session.mount(url_main, Pkcs12Adapter(pkcs12_filename='my.p12', pkcs12_password=cert_pass))
 
@@ -61,11 +63,11 @@ try:
                     if re.search(pattern, html_ticket.a['title'].lower()):
                         blocking_request = session.get(url_block + ticket_id)
                         print(f'{bcolors.HEADER}запрос на блокировку тикета, статус: {bcolors.OK}{blocking_request.status_code}{bcolors.END}')
+                        subprocess.run(['python', 'sender.py', ldap_pass, html_ticket.a['title'], td_tags_list[5].div['title']])
                         break
                 else:
                     if ticket_id not in overlook:
-                        appcommand = ['firefox-bin', url_main + html_ticket.a['href']]
-                        subprocess.run(appcommand, capture_output=True)
+                        subprocess.run(['firefox-bin', url_open + ticket_id], capture_output=True)
                         print(f'{bcolors.WARNING}Новый тикет, открытие в браузере{bcolors.END}')
                         overlook.add(ticket_id)
 
